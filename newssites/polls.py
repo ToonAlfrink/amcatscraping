@@ -75,14 +75,15 @@ class Volkskrant(HTTPScraper):
         comment_script = [s for s in poll.doc.cssselect("script") if "listContent" in s.text_content()][0]
         comment_href = re.search("getReactions\('([^']+)'", comment_script.text_content()).group(1)
         comment_doc = self.getdoc(urljoin(poll.props.url, comment_href))
-        for div in comment_doc.cssselect("div.reac_box3,div.reac_box3_odd"):
-            comment = HTMLDocument(
-                parent = poll,
-                url = poll.props.url,
-                author = div.cssselect("b")[0].text,
-                text = div.cssselect("p")[0].text,
-                date = readDate(div.cssselect("div.gen_right")[0].text_content()))
-            yield comment        
+        if comment_doc:
+            for div in comment_doc.cssselect("div.reac_box3,div.reac_box3_odd"):
+                comment = HTMLDocument(
+                    parent = poll,
+                    url = poll.props.url,
+                    author = div.cssselect("b")[0].text,
+                    text = div.cssselect("p")[0].text,
+                    date = readDate(div.cssselect("div.gen_right")[0].text_content()))
+                yield comment        
 
 
 class AD(HTTPScraper):
@@ -94,7 +95,10 @@ class AD(HTTPScraper):
 
     def _get_units(self):
         index_doc = self.getdoc(self.index_url)
-        poll_script = index_doc.cssselect("section.poll")[0].text_content()
+        if index_doc.cssselect("section.poll"):
+            poll_script = index_doc.cssselect("section.poll")[0].text_content()
+        else:
+            return
         results_url = urljoin(self.index_url, poll_script.split("openPollUrl")[1].split("'")[3])
         poll_url = urljoin(self.index_url, poll_script.split("openPollUrl")[2].split("'")[3])
         yield results_url, poll_url, index_doc
@@ -139,7 +143,8 @@ class Telegraaf(HTTPScraper):
         article.props.date = readDate(doc.cssselect("#artikel span.datum")[0].text)
         article.props.externalid = article.props.url.split("/")[-2]
         article.props.text = doc.cssselect("#artikelKolom div.zaktxt,p")
-        article.props.dateline = doc.cssselect("#artikelKolom span.location")[0]
+        if doc.cssselect("#artikelKolom span.location"):
+            article.props.dateline = doc.cssselect("#artikelKolom span.location")[0]
         for comment in self.get_comments(article):
             comment.is_comment = True
             yield comment
