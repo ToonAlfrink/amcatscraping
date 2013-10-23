@@ -101,7 +101,7 @@ class Telegraaf(HTTPScraper):
     source = 'Telegraaf - website'
     def _get_units(self):
         doc = self.getdoc(self.index_url)
-        for a in doc.cssselect("div.meestgelezenwidget div.pad5")[0].cssselect("div.item a"):
+        for a in doc.cssselect("div.meestgelezenwidget div.pad5")[0].cssselect("li.item a"):
             yield a.get('href')
 
     def _scrape_unit(self, url):
@@ -183,7 +183,7 @@ class Top5Scraper(HTTPScraper):
                 NRC,
                 AD
             ]
-
+        result = []
         for scraper in self.scrapers:
             scraper = scraper(
                 project = self.options['project'].id,
@@ -192,7 +192,12 @@ class Top5Scraper(HTTPScraper):
             rank = 0
             for unit in scraper._get_units():
                 rank += 1
-                yield (scraper, unit, rank)
+                result.append((scraper, unit, rank))
+        if len(result) < 30:
+            raise Exception("not complete")
+        for unit in result:
+            yield unit
+ 
 
     def _scrape_unit(self, unit):
         (scraper, unit, rank) = unit
