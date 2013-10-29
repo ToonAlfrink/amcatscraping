@@ -19,6 +19,8 @@ from __future__ import unicode_literals, print_function, absolute_import
 # License along with AmCAT.  If not, see <http://www.gnu.org/licenses/>.  #
 ###########################################################################
 
+import re
+
 from urllib import urlencode
 from urlparse import urljoin
 
@@ -51,6 +53,7 @@ class NRCArchiefScraper(HTTPScraper, DBScraper):
         for li in index_doc.cssselect("div.main_content ul.list li"):
             page_doc = self.getdoc(urljoin(index_doc.url, li.cssselect("a")[0].get('href')))
             for a in page_doc.cssselect("div.main_content ul.list li a"):
+                print(a.get('href'))
                 yield urljoin(page_doc.url, a.get('href'))
 
     def _scrape_unit(self, url):
@@ -64,7 +67,7 @@ class NRCArchiefScraper(HTTPScraper, DBScraper):
                 article.props.section = string.strip().split(":")[1].strip()
             elif string.strip().startswith("Pagina"):
                 article.props.page_str = string.strip().split(":")[1].strip()
-        article.props.headline = article.doc.cssselect("#article h1")[0]
+        article.props.headline = article.doc.cssselect("#article h1")[0].text_content().strip()
         article.props.text = article.doc.cssselect("#article h3, #article p:not(#article-info):not(#metadata)")
         if article.props.text[-1].text_content().strip().startswith("Op dit artikel rust auteursrecht"):
             article.props.text.pop(-1)
@@ -75,6 +78,6 @@ if __name__ == '__main__':
     from amcat.scripts.tools import cli
     from amcat.tools import amcatlogging
     amcatlogging.info_module("amcat.scraping")
-    cli.run_cli(TemplateScraper)
+    cli.run_cli(NRCArchiefScraper)
 
 
