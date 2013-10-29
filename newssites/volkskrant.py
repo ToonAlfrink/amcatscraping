@@ -78,7 +78,9 @@ class WebVolkskrantScraper(HTTPScraper, DatedScraper):
             if page.props.author:
                 page.props.author = page.props.author[:98]
         page.props.text = page.doc.cssselect("#art_box2")[0]
-        page.props.section = re.search("/vk/nl/[0-9]+/([a-zA-Z\-]+)/article/", page.props.url).group(1)
+        match = re.search("/vk/nl/[0-9]+/([a-zA-Z\-]+)/article/", page.props.url)
+        if match:
+            page.props.section = match.group(1)
         yield page
 
 
