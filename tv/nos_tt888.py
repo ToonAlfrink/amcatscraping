@@ -35,18 +35,18 @@ from amcat.tools.stl import STLtoText
 from amcat.scraping.toolkit import todate
 from amcat.models.medium import Medium
 
-mediadict = {989900373:77,
-             989900380:87,
-             989900392:96,
-             989900395:163,
-             989900365:479,
-             989900389:490,
-             989900555:999,
-             989900427:81,
-             989900423:269,
-             989900387:78,
-             989900390:271,
-             989900617:113}
+mediadict = {'buitenhof': 'Buitenhof',
+             'de wereld draait door': 'De Wereld Draait Door',
+             'eenvandaag': 'Een Vandaag',
+             'eva jinek op zondag': 'Eva Jinek',
+             'knevel & van den brink': 'Knevel &amp; Van Den Brink',
+             'nieuwsuur': 'Nieuwsuur',
+             'nos journaal 20:00': 'NOS 20:00',
+             'nos journaal op 3': 'journaal op 3',
+             'pauw & witteman': 'Pauw en Witteman',
+             'vandaag de dag': 'Vandaag de dag',
+             'vandaag de vrijdag': 'Vandaag de vrijdag',
+             'zembla': 'Zembla'}
 
 HOST = "ftp.tt888.nl"
 
@@ -75,34 +75,23 @@ class tt888Scraper(DBScraper):
         super(tt888Scraper, self).__init__(*args, **kargs)
         self._ftp = ftplib.FTP(HOST)  
         self._ftp.login(self.options['username'], self.options['password'])
-        self._ftp_lock = threading.Lock()
 
-    @contextmanager
-    def ftp(self):
-        self._ftp_lock.acquire()
-        try:
-            yield self._ftp
-        finally:
-            self._ftp_lock.release()
-        
     def _get_units(self):
         existing_files = getUrlsFromSet(setid=self.articleset, check_back=30)
-        with self.ftp() as ftp:
-            files = ftp.nlst()
+        files = self._ftp.nlst()
         for fn in files:
             fn = fn.decode("latin-1")
             title = fn.split('/')[-1]                
+            if title.count('-') > 9:
+                continue # Filter out reruns (marked by double dates)
             if title in existing_files:
                 print("Already in articleset: %s" % title)
                 continue # Skip if already in database
-            if title.count('-') > 9:
-                continue # Filter out reruns (marked by double dates)
             yield fn
 
     def _scrape_unit(self, fn):
         dest = StringIO()
-        with self.ftp() as ftp:
-            ftp.retrbinary(b'RETR %s' % (fn.encode('latin-1')) , dest.write)
+        self._ftp.retrbinary(b'RETR %s' % (fn.encode('latin-1')) , dest.write)
         body = STLtoText(dest.getvalue())
         body = body.decode('latin-1','ignore').strip().lstrip('888').strip()
         title = fn.split('/')[-1]
@@ -110,16 +99,12 @@ class tt888Scraper(DBScraper):
         date = getDate(title)
 
         if medium == 'nos journaal' and int(format(date, '%H')) == 20 and int(format(date, '%M')) == 0: medium = 'nos journaal 20:00'
+        if medium in mediadict.keys():
+            medium = mediadict[medium]
         med = Medium.get_or_create(medium)
-        if med.id in mediadict:
-            print("saving %s as %s" % (med.id,mediadict[med.id]))
-            med = Medium.objects.get(id=mediadict[med.id])
-        
         art = Article(headline=medium, text=body,
                       medium = med, date=date, url = fn)
         yield art
-        
-
 
 if __name__ == '__main__':
     from amcat.scripts.tools import cli

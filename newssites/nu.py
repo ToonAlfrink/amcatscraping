@@ -112,7 +112,8 @@ class NuScraper(HTTPScraper, DatedScraper):
         article.props.headline = article.doc.cssselect("#leadarticle div.header h1")[0].text_content().strip()
         article.props.section = url.split("/")[3].upper()
         article.props.summary = article.doc.cssselect("#leadarticle div.content h2.summary")
-        article.doc.cssselect("center.articlebodyad")[0].drop_tree()
+        if article.doc.cssselect("center.articlebodyad"):
+            article.doc.cssselect("center.articlebodyad")[0].drop_tree()
         article.props.text = article.doc.cssselect("#leadarticle div.content")
         smallprint = article.doc.cssselect(
             "#leadarticle div.content span.smallprint")[0].text_content().split("|")[0]
