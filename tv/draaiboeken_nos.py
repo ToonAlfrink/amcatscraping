@@ -70,52 +70,40 @@ class DraaiboekenScraper(DBScraper):
         super(DraaiboekenScraper, self).__init__(*args, **kargs)
         self._ftp = ftplib.FTP(HOST)  
         self._ftp.login(self.options['username'], self.options['password'])
-        self._ftp_lock = threading.Lock()
 
-    @contextmanager
-    def ftp(self):
-        self._ftp_lock.acquire()
-        try:
-            yield self._ftp
-        finally:
-            self._ftp_lock.release()
-        
     def _get_units(self):
         existing_files = getUrlsFromSet(setid=self.articleset, check_back=30)
-        print(existing_files)
-        with self.ftp() as ftp:
-            for folder in ftp.nlst():
-                if '.txt' in folder: continue
-                files = {}
-                got_xml = False
-                for f in ftp.nlst(folder):
-                    if '.txt' in f:
-                        if f in existing_files:
-                            print('Already in database: %s' % f)
-                            continue
-                        files[f.split('/')[1].split('.txt')[0]] = f
-                    if '.xml' in f: got_xml = f
-                if got_xml:
-                    if len(files) == 0:
-                        print('\nAll files in %s already in database\n' % got_xml)
+        for folder in self._ftp.nlst():
+            if '.txt' in folder: continue
+            files = {}
+            got_xml = False
+            for f in self._ftp.nlst(folder):
+                if '.txt' in f:
+                    if f in existing_files:
+                        print('Already in database: %s' % f)
                         continue
-                    dest = StringIO()
-                    ftp.retrbinary(b'RETR %s' % got_xml, dest.write)
+                    files[f.split('/')[1].split('.txt')[0]] = f
+                if '.xml' in f: got_xml = f
+            if got_xml:
+                if len(files) == 0:
+                    print('\nAll files in %s already in database\n' % got_xml)
+                    continue
+                dest = StringIO()
+                self._ftp.retrbinary(b'RETR %s' % got_xml, dest.write)
                     
-                    xml = dest.getvalue()
-                    for p in xml.split('<qry_Nieuwsmonitor>')[1:]:
-                        tb = p.split('titelbestand>')[1].split('<')[0]
-                        pn = p.split('Programmanaam>')[1].split('<')[0].strip()
-                        if tb in files:
-                            dest = StringIO()
-                            ftp.retrbinary(b'RETR %s' % files[tb], dest.write)
-                            dest.seek(0)
-                            body = cleanUpDraaiboek(dest)
-                            yield (pn,files[tb],body)
-                        else:
-                            print('Missing or already in database: %s' % tb)
+                xml = dest.getvalue()
+                for p in xml.split('<qry_Nieuwsmonitor>')[1:]:
+                    tb = p.split('titelbestand>')[1].split('<')[0]
+                    pn = p.split('Programmanaam>')[1].split('<')[0].strip()
+                    if tb in files:
+                        dest = StringIO()
+                        self._ftp.retrbinary(b'RETR %s' % files[tb], dest.write)
+                        dest.seek(0)
+                        body = cleanUpDraaiboek(dest)
+                        yield (pn,files[tb],body)
+                    else:
+                        print('Missing or already in database: %s' % tb)
                     
-
     def _scrape_unit(self, ftuple):
         title = ftuple[0]
         url = ftuple[1]

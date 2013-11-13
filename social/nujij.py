@@ -35,28 +35,19 @@ INDEX_URL = "http://www.nujij.nl/"
 class NuJijScraper(HTTPScraper, DatedScraper):
     medium_name = "Nujij.nl"
 
-    def __init__(self, *args, **kwargs):
-        super(NuJijScraper, self).__init__(*args, **kwargs)
-
-
-        
     def _get_units(self):
         index = self.getdoc(INDEX_URL)
         for category in index.cssselect("dl.topmenu dd a")[1:]:
             url = category.get('href').replace(" ","%20")
-
             for href in self.get_articles(self.getdoc(url)):
                 yield href
             nxt = self.getdoc(url)        
             while len(nxt.cssselect("div.pages a.next"))==1:
-                nxt_url = urljoin(url,nxt.cssselect("div.pages a.next")[0].get('href'))
-                
+                nxt_url = urljoin(url,nxt.cssselect("div.pages a.next")[0].get('href'))                
                 nxt = self.getdoc(nxt_url)
                 for url in self.get_articles(nxt):
                     yield url
 
-
-            
     def get_articles(self,page):
         for article in page.cssselect("div.columnLeft div.bericht"):
             _datum = article.cssselect("span.tijdsverschil")[0].get('publicationdate')
@@ -67,7 +58,6 @@ class NuJijScraper(HTTPScraper, DatedScraper):
             if self.options['date'] > datum.date():
                 break
             
-
     def _scrape_unit(self, url):
         page = HTMLDocument(url = url)
         page.prepare(self)
@@ -75,49 +65,49 @@ class NuJijScraper(HTTPScraper, DatedScraper):
         page.props.author = page.doc.cssselect("div.bericht-details")[0].text_content().split("door")[1].strip()
         page.props.headline = page.doc.cssselect("div.articleheader h1.title")[0].text_content().strip()
         page.props.text = page.doc.cssselect("div.articlecontent div.articlebody")[0]
-        page.props.link = page.doc.cssselect("div.bericht-link")[0].get('href')
+        page.props.subject_link = page.doc.cssselect("div.bericht-link")[0].get('href')
         try:
             page.props.tags = page.doc.cssselect("span.bericht-tags-links")[0].text_content().rstrip(".")
         except IndexError:
             pass
-            
         for comment in self.scrape_comments(page):
+            comment.props
             yield comment
-            
         yield page
 
     def scrape_comments(self,page):
         nxt = page.doc
         if len(nxt.cssselect("div.pages a.next")) >= 1:
             while len(nxt.cssselect("div.pages a.next")) >= 1:
-                try:
-                    nxt = self.getdoc(nxt.cssselect("div.pages a.next")[0].get('href'))
-                except ValueError:
-                    nxt = self.getdoc(urljoin(INDEX_URL,nxt.cssselect("div.pages a.next")[0].get('href')))
-                for li in nxt.cssselect("ol.reacties li.hidenum"):
-                    comment = HTMLDocument(parent=page)
-                    if not("<b>Reageer als eerste op dit bericht</b>" in etree.tostring(li) or "gebruiker verwijderd" in etree.tostring(li)):
-                        try:
-                            comment.props.text = li.cssselect("div.reactie-body")[0]
-                            comment.props.author = li.cssselect("strong")[0].text
-                            comment.props.date = readDate(li.cssselect("span.tijdsverschil")[0].get('publicationdate'))
-                        except IndexError:
-                            pass
-                        else:
-                            if comment.props.date.date() == self.options['date']:
-                                yield comment
+                nxt = self.getdoc(urljoin(INDEX_URL,nxt.cssselect("div.pages a.next")[0].get('href')))
+                for comment in self.getcomments(nxt):
+                    yield comment
         else:
-            for li in nxt.cssselect("ol.reacties li.hidenum"):
-                comment = HTMLDocument(parent=page)
-                if not "<b>Reageer als eerste op dit bericht</b>" in etree.tostring(li):
-                    try:
-                        comment.props.text = li.cssselect("div.reactie-body")[0]
-                        comment.props.author = li.cssselect("strong")[0].text
-                        comment.props.date = readDate(li.cssselect("span.tijdsverschil")[0].get('publicationdate'))
-                        if comment.props.date.date() == self.options['date']:
-                            yield comment
-                    except IndexError:
-                        pass
+            for comment in self.getcomments(nxt):
+                comment.props.section = page.props.section
+                yield comment
+
+    def getcomments(self, doc):
+        """scrape comments from single page"""
+        for li in doc.cssselect("ol.reacties li.hidenum"):
+            comment = HTMLDocument(parent=page)
+            if not("Reageer als eerste op dit bericht" in etree.tostring(li) 
+                   or "gebruiker verwijderd" in etree.tostring(li)):
+                try:
+                    reactie_saldi = li.cssselect("div.reactie-saldo")
+                    comment.props.votes = {
+                        'up' : int(reactie_saldi[1].text),
+                        'down' : int(reactie_saldi[0].text)
+                        }
+                    comment.props.text = li.cssselect("div.reactie-body")[0]
+                    comment.props.author = li.cssselect("strong")[0].text_content().strip()
+                    comment.props.date = readDate(li.cssselect("span.tijdsverschil")[0].get('publicationdate'))
+                    comment.props.url = doc.url
+                except IndexError:
+                    pass
+                else:
+                    if comment.props.date.date() == self.options['date']:
+                        yield comment
 
 
 if __name__ == '__main__':
