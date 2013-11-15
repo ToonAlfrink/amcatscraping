@@ -53,7 +53,6 @@ class NRCArchiefScraper(HTTPScraper, DBScraper):
         for li in index_doc.cssselect("div.main_content ul.list li"):
             page_doc = self.getdoc(urljoin(index_doc.url, li.cssselect("a")[0].get('href')))
             for a in page_doc.cssselect("div.main_content ul.list li a"):
-                print(a.get('href'))
                 yield urljoin(page_doc.url, a.get('href'))
 
     def _scrape_unit(self, url):

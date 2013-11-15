@@ -50,24 +50,15 @@ class WebFDScraper(HTTPScraper, DBScraper):
     
 
     def _get_units(self):
-
-        class Unit(object):
-            def __init__(self, row):
-                self.row = row
-            def __unicode__(self):
-                return unicode(self.row['id'])
-
         start = 0
         result = self.search_result(start)
         while result['response']['numFound'] > result['response']['start']:
             for row in result['response']['docs']:
-                yield Unit(row)
+                yield row
                 
             start += 10
             result = self.search_result(start)
 
-            
-        
     def search_result(self, start):
         search_url = "http://fd.nl/solr/select/"
 
@@ -91,8 +82,7 @@ class WebFDScraper(HTTPScraper, DBScraper):
         result_json = self.open(search_url, urlencode(request_parameters)).read()
         return json.loads(result_json)
         
-    def _scrape_unit(self, unit):
-        row = unit.row
+    def _scrape_unit(self, row):
         article = HTMLDocument()
         article.props.headline = row['title']
         article.props.section = row['home_section_name']

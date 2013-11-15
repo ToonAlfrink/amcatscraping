@@ -86,8 +86,11 @@ class WebADScraper(HTTPScraper, DatedScraper):
     def get_comment_pages(self,page):
         if not page.doc.cssselect("#reaction"):
             return
-        n_id, c_id = page.props.url.split("/")[4::4] #5 and #9
-        doc = self.getdoc(self.comment_url.format(page=0,cid=c_id,nid=n_id))
+        n_id, c_id = page.props.url.split("/")[4:9:4] #5 and #9
+        try:
+            doc = self.getdoc(self.comment_url.format(page=0,cid=c_id,nid=n_id))
+        except HTTPError:
+            return
         try:
             total = int(doc.cssselect("div.pagenav")[0].text.split(" van ")[1])
         except IndexError:
