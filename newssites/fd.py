@@ -31,7 +31,6 @@ from datetime import timedelta
 class WebFDScraper(HTTPScraper, DBScraper):
     medium_name = "Het Financieele Dagblad - website"
     initial_url = "http://www.fd.nl"
-
     login_url = "http://fd.nl/handle_login?{params}" #POST doesn't seem to work
 
     def _login(self, username, password):
@@ -45,9 +44,6 @@ class WebFDScraper(HTTPScraper, DBScraper):
         response = json.loads(response_json)
         if response['status'] != "ok":
             raise ValueError("login status returned not OK but {}".format(response))
-
-
-    
 
     def _get_units(self):
         start = 0
@@ -101,12 +97,11 @@ class WebFDScraper(HTTPScraper, DBScraper):
         for comment in self.get_comments(article.doc):
             comment.is_comment = True
             comment.props.parent = article
+            comment.props.section = article.props.section
             yield comment
 
         yield article
              
-
-
     redirect_url = "http://fd.nl/?service=searchRedirect&id={artid}"
 
     def get_article_url(self, artid):
@@ -124,6 +119,7 @@ class WebFDScraper(HTTPScraper, DBScraper):
             except ValueError:
                 comment.props.date = readDate(spans[1].text_content())
             comment.props.author = spans[0].text_content().strip()
+            comment.props.url = doc.url
             yield comment
             
 
