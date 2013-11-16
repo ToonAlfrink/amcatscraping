@@ -67,7 +67,7 @@ def scrape_comments(scraper, page):
 
 
 class WebTelegraafScraper(HTTPScraper, DatedScraper):
-    medium_name = "Telegraaf website"
+    medium_name = "Telegraaf - website"
 
     sections = ["binnenland","buitenland"]
     page_url = "http://www.telegraaf.nl/snelnieuws/index.jsp?sec={section}&pageNumber={page}"

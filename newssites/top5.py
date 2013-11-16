@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
 ###########################################################################
@@ -31,16 +30,17 @@ from amcat.tools.toolkit import readDate
 import re
 
 
-class NRC(HTTPScraper):
+class NRC(object):
     index_url = "http://www.nrc.nl"
     source = 'NRC - website'
 
-    def __init__(self, *args, **kwargs):
-        super(NRC, self).__init__(*args, **kwargs)
-        self.index_url = urljoin(self.index_url, self.getdoc(self.index_url).cssselect("div.watskeburt h2 a")[0].get('href'))
-        
+    def __init__(self, project, articleset):
+        #borrow a scraper for it's getdoc()
+        self.scraper = HTTPScraper(project = project, articleset = articleset)
+
     def _get_units(self):
-        doc = self.getdoc(self.index_url)
+        self.index_url = urljoin(self.index_url, self.scraper.getdoc(self.index_url).cssselect("div.watskeburt h2 a")[0].get('href'))
+        doc = self.scraper.getdoc(self.index_url)
         div = doc.cssselect("div.related")[0]
         if div.cssselect("div.retentie"):
             div.cssselect("div.retentie")[0].drop_tree()
@@ -52,7 +52,7 @@ class NRC(HTTPScraper):
             yield article
 
     def _scrape_unit(self, article):
-        article.prepare(self)
+        article.prepare(self.scraper)
         if article.doc.cssselect("div.author"):
             article.props.author = article.doc.cssselect("div.author")[0].text_content().lstrip("dor")
         article.props.text = article.doc.cssselect("#broodtekst")[0]
@@ -65,21 +65,23 @@ class Volkskrant(HTTPScraper):
     source = 'Volkskrant - website'
     domain = '.volkskrant.nl'
 
+    def __init__(self, project, articleset):
+        self.scraper = HTTPScraper(project = project, articleset = articleset)
+
     def _set_cookies(self):
         for cookie in create_cc_cookies(self.domain):
-            self.opener.cookiejar.set_cookie(cookie)
+            self.scraper.opener.cookiejar.set_cookie(cookie)
 
     def _get_units(self):
         self._set_cookies()
-
-        doc = self.getdoc(self.index_url)
+        doc = self.scraper.getdoc(self.index_url)
         for a in doc.cssselect("#top5 li a"):
             url = urljoin(self.cookie_url, a.get('href'))
             yield url
 
     def _scrape_unit(self, url):
         article = HTMLDocument(url = url)
-        article.prepare(self)
+        article.prepare(self.scraper)
         article.props.headline = article.doc.cssselect("#articleDetailTitle")[0].text_content()
         time_post = article.doc.cssselect("div.time_post")[0]
         if time_post.cssselect("span.author"):
@@ -99,14 +101,18 @@ class Trouw(Volkskrant):
 class Telegraaf(HTTPScraper):
     index_url = "http://www.telegraaf.nl/"
     source = 'Telegraaf - website'
+
+    def __init__(self, project, articleset):
+        self.scraper = HTTPScraper(project = project, articleset = articleset)
+
     def _get_units(self):
-        doc = self.getdoc(self.index_url)
+        doc = self.scraper.getdoc(self.index_url)
         for a in doc.cssselect("div.meestgelezenwidget div.pad5")[0].cssselect("li.item a"):
             yield a.get('href')
 
     def _scrape_unit(self, url):
         article = HTMLDocument(url = url)
-        article.prepare(self)
+        article.prepare(self.scraper)
         article.props.date = readDate(article.doc.cssselect("#artikel span.datum")[0].text_content())
         article.props.headline = article.doc.cssselect("#artikel h1")[0].text_content()
         author = article.doc.cssselect("#artikel span.auteur")
@@ -120,14 +126,17 @@ class Telegraaf(HTTPScraper):
 class Nu(HTTPScraper):
     source = 'nu.nl - website'
     index_url = 'http://www.nu.nl'
-    
+
+    def __init__(self, project, articleset):
+        self.scraper = HTTPScraper(project = project, articleset = articleset)
+
     def _get_units(self):
-        for a in self.getdoc(self.index_url).cssselect(".top5 a")[:5]:
+        for a in self.scraper.getdoc(self.index_url).cssselect(".top5 a")[:5]:
             yield urljoin(self.index_url, a.get('href'))
 
     def _scrape_unit(self, url):
         article = HTMLDocument(url = url)
-        article.prepare(self)
+        article.prepare(self.scraper)
         article.props.date = readDate(article.doc.cssselect("div.dateplace-data")[0].text)
         article.props.headline = article.doc.cssselect("h1")[0].text_content().strip()
         [s.drop_tree() for s in article.doc.cssselect("script")]
@@ -141,15 +150,18 @@ class AD(HTTPScraper):
     source = 'Algemeen Dagblad - website'
     index_url = 'http://www.ad.nl'
 
+    def __init__(self, project, articleset):
+        self.scraper = HTTPScraper(project = project, articleset = articleset)
+
     def _get_units(self):
-        doc = self.getdoc(self.index_url)
+        doc = self.scraper.getdoc(self.index_url)
         for a in doc.cssselect('#hdr_hvdn_top_list a'):
             href = a.get('href')
             yield urljoin(self.index_url, href)
 
     def _scrape_unit(self, url):
         article = HTMLDocument(url=url)
-        article.prepare(self)
+        article.prepare(self.scraper)
         authordate = article.doc.cssselect('span.author')[0].text_content()
         
         p = "((Bewerkt door)|(Door)):?( |\n)([A-Za-z0-9 ]+)\n\n(([0-9]{1,2}\-){2}[0-9]{1,2})"
@@ -172,8 +184,8 @@ class AD(HTTPScraper):
 
 class Top5Scraper(HTTPScraper):
     
-
     def _get_units(self):
+        #cookies
         self.open("http://www.volkskrant.nl")
         self.scrapers = [
                 Telegraaf,

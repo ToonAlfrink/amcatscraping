@@ -84,13 +84,14 @@ class NuJijScraper(HTTPScraper, DatedScraper):
                     yield comment
         else:
             for comment in self.getcomments(nxt):
+                comment.parent = page
                 comment.props.section = page.props.section
                 yield comment
 
     def getcomments(self, doc):
         """scrape comments from single page"""
         for li in doc.cssselect("ol.reacties li.hidenum"):
-            comment = HTMLDocument(parent=page)
+            comment = HTMLDocument()
             if not("Reageer als eerste op dit bericht" in etree.tostring(li) 
                    or "gebruiker verwijderd" in etree.tostring(li)):
                 try:
