@@ -47,7 +47,7 @@ class WebADScraper(HTTPScraper, DatedScraper):
                 href = tag.cssselect('a')[0].get('href')
                 yield HTMLDocument(url = urljoin(index.base_url, href), 
                                    date = self.options['date'])
-        
+
     def _scrape_unit(self, article): 
         article.prepare(self)
         article = self.get_article(article)
@@ -55,6 +55,9 @@ class WebADScraper(HTTPScraper, DatedScraper):
         for comment in self.get_comments(article):
             comment.is_comment = True
             comment.parent = article
+            comment.props.url = parent.props.url
+            if hasattr(parent.props, 'section'):
+                comment.props.section = parent.props.section
             yield comment
 
     def get_article(self, article):
@@ -73,7 +76,6 @@ class WebADScraper(HTTPScraper, DatedScraper):
         return article
 
     comment_url = "http://www.ad.nl/ad/reaction/listContent.do?componentId={cid}&navigationItemId={nid}&language=nl&pageType=articleDetail&reactionLayout=small&page={page}"
-
     def get_comments(self,page):
         for doc in self.get_comment_pages(page):
             for li in doc.cssselect("ul li"):
@@ -86,11 +88,8 @@ class WebADScraper(HTTPScraper, DatedScraper):
     def get_comment_pages(self,page):
         if not page.doc.cssselect("#reaction"):
             return
-        n_id, c_id = page.props.url.split("/")[4:9:4] #5 and #9
-        try:
-            doc = self.getdoc(self.comment_url.format(page=0,cid=c_id,nid=n_id))
-        except HTTPError:
-            return
+        n_id, c_id = page.props.url.split("/")[5:10:4] #6 and #10
+        doc = self.getdoc(self.comment_url.format(page=0,cid=c_id,nid=n_id))
         try:
             total = int(doc.cssselect("div.pagenav")[0].text.split(" van ")[1])
         except IndexError:
