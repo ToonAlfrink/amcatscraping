@@ -30,7 +30,7 @@ from amcat.scraping.htmltools import create_cc_cookies
 from amcat.scraping.scraper import HTTPScraper,DatedScraper
 
 class WebADScraper(HTTPScraper, DatedScraper):
-    medium_name = "AD website"
+    medium_name = "Algemeen Dagblad - website"
     index_url = "http://www.ad.nl/ad/nl/1401/archief/integration/nmc/frameset/archive/archiveDay.dhtml?archiveDay={self.options[date].year:04d}{self.options[date].month:02d}{self.options[date].day:02d}"
 
     def _set_cookies(self):
