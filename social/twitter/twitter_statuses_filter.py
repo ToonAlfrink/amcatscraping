@@ -49,14 +49,13 @@ except ImportError:
 
 class TwitterFilterForm(forms.Form):
     query_file = forms.CharField(required=False)
-    date = forms.DateField()
 
 class TwitterFilterScript(Script):
     options_form = TwitterFilterForm
 
     def run(self, _input):
         if not self.options['query_file']:
-            self.options['query_file'] = '{}/scraping/social/twitter/filter_query.txt'.format(environ.get('PYTHONPATH'))
+            self.options['query_file'] = '{}/scrapers/social/twitter/filter_query.txt'.format(environ.get('PYTHONPATH'))
         words = []
         word_file = open(self.options['query_file'])
         for l in word_file.readlines():
@@ -71,15 +70,18 @@ class TwitterFilterScript(Script):
     def stream(self):
         auth = OAuthHandler(consumer_key,consumer_secret)
         auth.set_access_token(access_token,access_token_secret)
-        l = Listener(self.options['date'])
+        l = Listener()
         stream = Stream(auth,l)
         l.stream = stream
         return stream
 
 class Listener(StreamListener):
-    def __init__(self,date, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(StreamListener, self).__init__(*args, **kwargs)
-        f = "/home/amcat/tweets/{}".format(date.strftime("filter_%Y-%m-%d.csv"))
+        f = environ.get('TWITTERSCRAPER_OUTPUTDIR')
+        if not f:
+            raise Exception("Please specify TWITTERSCRAPER_OUTPUTDIR environment variable")
+        f = f + date.today().strftime("filter_%Y-%m-%d.csv")
         outputfile = open(f,'a+')
         self.writer = csv.DictWriter(outputfile,fieldnames=fields)
 

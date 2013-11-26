@@ -34,10 +34,7 @@ from amcat.models.medium import Medium
 
 class Volkskrant(HTTPScraper):
     index_url = "http://www.volkskrant.nl/vk/nl/3184/opinie/index.dhtml"
-
-    def __init__(self, *args, **kwargs):
-        super(Volkskrant, self).__init__(*args, **kwargs)
-        self.medium = "Volkskrant - website"
+    medium_name = "Volkskrant - website"
 
     def _get_units(self):
         index_doc = self.getdoc(self.index_url)
@@ -88,10 +85,7 @@ class Volkskrant(HTTPScraper):
 
 class AD(HTTPScraper):
     index_url = "http://ad.nl"
-
-    def __init__(self, *args, **kwargs):
-        super(AD, self).__init__(*args, **kwargs)
-        self.medium = "Algemeen Dagblad - website"
+    medium_name = "Algemeen Dagblad - website"
 
     def _get_units(self):
         index_doc = self.getdoc(self.index_url)
@@ -118,10 +112,7 @@ class AD(HTTPScraper):
 
 class Telegraaf(HTTPScraper):
     index_url = "http://www.telegraaf.nl/watuzegt/wuz_stelling/"
-
-    def __init__(self, *args, **kwargs):
-        super(Telegraaf, self).__init__(*args, **kwargs)
-        self.medium = "Telegraaf - website"
+    medium_name = "Telegraaf - website"
 
     def _get_units(self):
         index = self.getdoc(self.index_url)
@@ -151,7 +142,6 @@ class Telegraaf(HTTPScraper):
         yield article
 
     def get_comments(self, article):
-        from lxml import html
         for div in article.doc.cssselect("#comments div.comment"): 
             comment = HTMLDocument(
                 url = article.props.url,
@@ -166,13 +156,9 @@ class Telegraaf(HTTPScraper):
 
 class Trouw(Volkskrant):
     index_url = "http://trouw.nl"
+    medium_name = "Trouw - website"
 
-    def __init__(self, *args, **kwargs):
-        super(Volkskrant, self).__init__(*args, **kwargs)
-        self.medium = "Trouw - website"
-
-
-class PollScraper(HTTPScraper, DatedScraper):
+class PollScraper(HTTPScraper):
     def _get_units(self):
         scrapers = [
             AD,
@@ -190,12 +176,11 @@ class PollScraper(HTTPScraper, DatedScraper):
 
     def _scrape_unit(self, unit):
         (scraper, unit) = unit
-        self.medium_name = scraper.medium
         for article in scraper._scrape_unit(unit):
             if not article.is_comment:
-                article.props.medium = Medium.get_or_create(scraper.medium)
+                article.props.medium = Medium.get_or_create(scraper.medium_name)
             else:
-                article.props.medium = Medium.get_or_create(scraper.medium + " - Comments")
+                article.props.medium = Medium.get_or_create(scraper.medium_name + " - Comments")
             if not hasattr(article.props, 'text'):
                 article.props.text = pformat(article.props.results)
             yield article

@@ -22,7 +22,6 @@ from amcat.scraping.scraper import HTTPScraper
 from amcat.scraping.document import HTMLDocument
 from amcat.tools.toolkit import readDate
 
-from lxml import html
 class TeletekstScraper(HTTPScraper):
     medium_name = "Teletekst"
     def _get_units(self):
