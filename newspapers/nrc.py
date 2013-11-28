@@ -98,7 +98,8 @@ class NRCScraper(HTTPScraper, DBScraper):
         
         p = re.compile("^[A-Z][a-z]+( [A-Z][a-z]+)?\.$")
         strong = page.doc.cssselect("p.intro strong")
-        if strong:
+        
+        if strong and strong[0].text:
             if p.match(strong[0].text):
                 page.props.dateline = strong[0].text
         return page
