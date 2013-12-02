@@ -23,8 +23,7 @@ from amcat.scraping.scraper import HTTPScraper, DBScraper
 from amcat.scraping.document import HTMLDocument
 from amcat.scraping import toolkit as stoolkit
 
-LOGIN_URL = "https://login.nrc.nl/login"
-INDEX_URL = "http://digitaleeditie.nrc.nl/digitaleeditie/%(version)s/%(year)d/%(month_minus)d/%(year)d%(month)02d%(day)02d___/1_01/"
+
 
 from urlparse import urljoin
 from urllib import urlencode
@@ -34,71 +33,57 @@ class NRCScraper(HTTPScraper, DBScraper):
     medium_name = "NRC Handelsblad"
     nrc_version = "NH"
 
+    login_url = "https://login.nrc.nl/login"
+    index_url = "http://digitaleeditie.nrc.nl/digitaleeditie/{self.nrc_version}/{d.year}/{month_minus}/{d.year}{d.month:02d}{d.day:02d}___/1_01/index.html"
+    section_url = "http://digitaleeditie.nrc.nl/digitaleeditie/{self.nrc_version}/{d.year}/{month_minus:02d}/{d.year}{d.month:02d}{d.day:02d}___/section{secnr}.html"
+
     def _login(self, username, password):
 
-        page = self.getdoc(LOGIN_URL)
+        page = self.getdoc(self.login_url)
 
         form = stoolkit.parse_form(page)
         form['username'] = username
         form['password'] = password
-        self.opener.opener.open(LOGIN_URL, urlencode(form))
+        self.opener.opener.open(self.login_url, urlencode(form))
 
     def _get_units(self):
-        """
-        @type date: datetime.date, datetime.datetime
-        @param date: date to scrape for.
-        """
-        date = self.options.get('date')
-
-        index = INDEX_URL % {
-            'year' : date.year,
-            'month' : date.month,
-            'day' : date.day,
-            'month_minus' : date.month - 1,
-            'version' : self.nrc_version
-        }
-        sections = self.getdoc(index).cssselect('#Sections a.thumbnail-link')
+        d = self.options.get('date')
+        month_minus = d.month - 1
+        index_url = self.index_url.format(**locals())
+        sections = self.getdoc(index_url).cssselect('#Sections a.section-link')
         for s in sections:
-            url = urljoin(index, s.get('href'))
-            yield url
+            #for each linked section from the left panel
+            section_url = urljoin(index_url, s.get('href'))
+            section_index = urljoin(section_url, self.getdoc(section_url).cssselect("#Tabs li.text-tab a")[0].get('href'))
+            for div in self.getdoc(section_index).cssselect("#MainContent div.one-preview"):
+                #for each page representation in the 'teksten' tab of the section
+                pagenumber = div.cssselect("h3 span")[0].text.strip("pagin ")
+                for a in div.cssselect("ul.article-links li a"):
+                    #for each article link in that div
+                    yield (pagenumber, urljoin(section_index, a.get('href')))
 
-    def _scrape_unit(self, url):
-        doc = self.getdoc(url)
-        for a in doc.cssselect('#Articles a'):
-            page = HTMLDocument(date=self.options.get('date'))
-            page.coords = stoolkit.parse_coords(doc.cssselect('div.%s' % a.get('class')))
-            page.props.url = urljoin(url, '%s_text.html' % a.get('class'))
+    def _scrape_unit(self, pagenr_url):
+        pagenumber,  url = pagenr_url
+        page = HTMLDocument(date = self.options.get('date'), url = url, pagenumber = pagenumber)
+        page.prepare(self)
+        article = self._get_article(page)
+        if article:
+            yield article
 
-            page.prepare(self)
-            article = self.get_article(page)
-            if article:
-                yield article
-
-
-    def get_article(self, page):
+    def _get_article(self, page):
         by = page.doc.cssselect("#MainContent p.by")[0]
         if by.cssselect("span.person"):
             page.props.author = by.cssselect("span.person")[0].text_content().strip()
-        page.props.pagenr = by.text_content().split("|")[1].lstrip("pagin ")
-        if "-" in page.props.pagenr:
-            page.props.pagenr = int(page.props.pagenr.split("-")[0].strip())
-        
-        page.props.text = page.doc.cssselect('.column-left')[0]
-
+        page.props.text = page.doc.cssselect('.column-left')
         if not page.doc.cssselect('h2')[0].text:
             return
-        page.props.headline = page.doc.cssselect('h2')[0].text
-        
-        intro = page.doc.cssselect('p.intro')
+        page.props.headline = page.doc.cssselect("#MainContent h2")[0].text
+        intro = page.doc.cssselect("p.leader em.intro") + page.doc.cssselect('p.intro')
         if intro:
-            page.props.text.insert(0, intro[0])
-
-        
+            page.props.text = intro + page.props.text
         page.props.section = page.doc.cssselect("div.more-articles h4")[0].text
-        
         p = re.compile("^[A-Z][a-z]+( [A-Z][a-z]+)?\.$")
         strong = page.doc.cssselect("p.intro strong")
-        
         if strong and strong[0].text:
             if p.match(strong[0].text):
                 page.props.dateline = strong[0].text
