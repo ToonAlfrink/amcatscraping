@@ -71,12 +71,9 @@ def getUrlsFromSet(setid, check_back=30):
             
 class tt888Scraper(DBScraper):
 
-    def __init__(self, *args, **kargs):
-        super(tt888Scraper, self).__init__(*args, **kargs)
+    def _get_units(self):
         self._ftp = ftplib.FTP(HOST)  
         self._ftp.login(self.options['username'], self.options['password'])
-
-    def _get_units(self):
         existing_files = getUrlsFromSet(setid=self.articleset, check_back=30)
         files = self._ftp.nlst()
         for fn in files:

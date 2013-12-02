@@ -23,10 +23,9 @@ from amcat.scraping.scraper import HTTPScraper, DBScraper
 from amcat.scraping.document import HTMLDocument
 from amcat.scraping import toolkit as stoolkit
 
-
-
 from urlparse import urljoin
 from urllib import urlencode
+from urllib2 import HTTPError
 import re
 
 class NRCScraper(HTTPScraper, DBScraper):
@@ -54,7 +53,10 @@ class NRCScraper(HTTPScraper, DBScraper):
         for s in sections:
             #for each linked section from the left panel
             section_url = urljoin(index_url, s.get('href'))
-            section_index = urljoin(section_url, self.getdoc(section_url).cssselect("#Tabs li.text-tab a")[0].get('href'))
+            try:
+                section_index = urljoin(section_url, self.getdoc(section_url).cssselect("#Tabs li.text-tab a")[0].get('href'))
+            except HTTPError:
+                continue
             for div in self.getdoc(section_index).cssselect("#MainContent div.one-preview"):
                 #for each page representation in the 'teksten' tab of the section
                 pagenumber = div.cssselect("h3 span")[0].text.strip("pagin ")

@@ -66,12 +66,10 @@ def cleanUpDraaiboek(text):
             
 class DraaiboekenScraper(DBScraper):
 
-    def __init__(self, *args, **kargs):
-        super(DraaiboekenScraper, self).__init__(*args, **kargs)
+    def _get_units(self):
         self._ftp = ftplib.FTP(HOST)  
         self._ftp.login(self.options['username'], self.options['password'])
 
-    def _get_units(self):
         existing_files = getUrlsFromSet(setid=self.articleset, check_back=30)
         for folder in self._ftp.nlst():
             if '.txt' in folder: continue
