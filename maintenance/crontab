@@ -23,6 +23,8 @@ TOP5_ARTICLESET=47
 TELETEKST_PROJECT=3
 TELETEKST_ARTICLESET=124
 
+TWITTERSCRAPER_OUTPUTDIR='/home/amcat/tweets'
+
 30 * * * * . ~/.amcat_crontab; bash $PYTHONPATH/scrapers/maintenance/hourly.sh
 0 3 * * * . ~/.amcat_crontab; DJANGO_DISABLE_SENTRY=Y DJANGO_DEBUG=N bash $PYTHONPATH/scrapers/maintenance/daily.sh
 0 0,12 * * * . ~/.amcat_crontab; python $PYTHONPATH/scrapers/newssites/top5.py $TOP5_PROJECT --articleset $TOP5_ARTICLESET
