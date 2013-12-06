@@ -113,13 +113,13 @@ class Telegraaf(HTTPScraper):
     def _scrape_unit(self, url):
         article = HTMLDocument(url = url)
         article.prepare(self.scraper)
-        article.props.date = readDate(article.doc.cssselect("#artikel span.datum")[0].text_content())
+        article.props.date = readDate(article.doc.cssselect("#artikel span.datum,#artikel span.datum-premium-content")[0].text_content())
         article.props.headline = article.doc.cssselect("#artikel h1")[0].text_content()
         author = article.doc.cssselect("#artikel span.auteur")
         if author:
             article.props.author = author[0].text_content()
         [s.drop_tree() for s in article.doc.cssselect("#artikelKolom script")]
-        article.props.text = article.doc.cssselect("#artikelKolom")[0]
+        article.props.text = article.doc.cssselect("#artikelKolom,#artikel div.zak-txt-premium-content")[0]
         yield article
     
 
