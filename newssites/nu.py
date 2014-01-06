@@ -44,7 +44,7 @@ class NuScraper(HTTPScraper, DatedScraper):
                 date = readDate(div.cssselect("span.date")[0].text).date()
                 if date == self.options['date']:
                     url = div.cssselect("h2 a")[0].get('href')
-                    yield (date, url)
+                    yield url
         
     def pinpoint_pages(self, n_results):
         #loading a single page takes a long time so we're using a smarter algorithm
@@ -105,10 +105,12 @@ class NuScraper(HTTPScraper, DatedScraper):
             return dates, None
 
 
-    def _scrape_unit(self, date_url):
-        date, url = date_url
-        article = HTMLDocument(url = url, date = date)
+    def _scrape_unit(self, url):
+        article = HTMLDocument(url = url)
         article.prepare(self)
+        article.props.date = readDate(
+            " ".join(article.doc.cssselect("div.dateplace-data")[0].text_content().split()[-4:])
+            )
         article.props.headline = article.doc.cssselect("#leadarticle div.header h1")[0].text_content().strip()
         article.props.section = url.split("/")[3].upper()
         article.props.summary = article.doc.cssselect("#leadarticle div.content h2.summary")
@@ -120,6 +122,24 @@ class NuScraper(HTTPScraper, DatedScraper):
         article.props.author = smallprint.split("Door:")[1].strip()
         article.props.tags = [a.text_content() for a in article.doc.cssselect("#middlecolumn div.tags li a")]
         yield article
+
+
+class Archive(NuScraper):
+    """gets the units from nieuwsarchief.nl instead, ignores date"""
+    index_url = "http://www.nieuwsarchief.nl/31/3/{index}/"
+    def _get_units(self):
+        index = 0
+        while True:
+            doc = self.getdoc(self.index_url.format(**locals()))
+            index += 100
+            links = [a.get('href') for a in doc.cssselect("a")]
+            for link in links:
+                if "http://www.nu.nl" in link:
+                    yield link
+
+            
+        
+
 
 
 if __name__ == '__main__':

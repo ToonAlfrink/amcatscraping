@@ -19,7 +19,6 @@ from __future__ import unicode_literals, print_function, absolute_import
 # License along with AmCAT.  If not, see <http://www.gnu.org/licenses/>.  #
 ###########################################################################
 
-from urllib import urlencode
 from urlparse import urljoin
 
 from amcat.scraping.document import HTMLDocument
