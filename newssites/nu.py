@@ -133,10 +133,14 @@ class Archive(NuScraper):
             doc = self.getdoc(self.index_url.format(**locals()))
             index += 100
             links = [a.get('href') for a in doc.cssselect("a")]
+            n_yielded = 0
             for link in links:
                 if "http://www.nu.nl" in link:
+                    n_yielded += 1
                     yield link
-
+            if n_yielded < 100:
+                break
+            n_yielded = 0
             
         
 
@@ -146,5 +150,5 @@ if __name__ == '__main__':
     from amcat.scripts.tools import cli
     from amcat.tools import amcatlogging
     amcatlogging.debug_module("amcat.scraping")
-    cli.run_cli(NuScraper)
+    cli.run_cli(Archive)
     

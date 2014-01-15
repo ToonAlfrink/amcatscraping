@@ -130,6 +130,9 @@ class TwitterPoliticiScraper(HTTPScraper, DBScraper):
                 tweet.props.author = div.cssselect("strong.fullname")[0].text_content()
                 tweet.props.date = datetime.fromtimestamp(float(div.cssselect("a.tweet-timestamp ._timestamp")[0].get('data-time')))
                 tweet.props.text = div.cssselect("p.js-tweet-text")[0]
+                if 'maxid' in locals().keys() and div.get('data-tweet-id') == maxid:
+                    #infinite loop
+                    done = True; break
                 maxid = div.get('data-tweet-id')
                 if tweet.props.date.date() < self.options['date']:
                     done=True;break
