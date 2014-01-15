@@ -115,6 +115,7 @@ class TelegraafScraper(HTTPScraper, DBScraper):
             page.props.pagenr = int(url.split("/")[-2])
             page.props.section = self.categories[page.props.pagenr]
             page.props.text = page.doc.cssselect('#article .body p')
+            page.props.date = self.options['date']
             if page.doc.cssselect("#article p.dateline"):
                 page.props.dateline = page.doc.cssselect("#article p.dateline")[0].text_content()
             if page.doc.cssselect("#article .kicker"):
