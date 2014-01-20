@@ -271,15 +271,12 @@ class PCMScraper(HTTPScraper, DBScraper):
 
     def _scrape_unit(self, ipage): # ipage --> index_page
         for art in ipage.doc['articles']:
+            if not art['title'] and art['title'].strip():
+                continue
             page = ipage.copy()
             page.props.author = art['author'][:100] if art['author'] else '' 
             page.props.headline = art['title']
             page.props.text = "\n\n".join([el['text'] for el in art['bodyElements']])
-
-            if page.props.headline is None:
-                log.warning("Skipping article (headline was None)")
-                continue
-
             page.parent = ipage
 
             yield page.create_article()
