@@ -37,22 +37,32 @@ class NRCScraper(HTTPScraper, DBScraper):
     section_url = "http://digitaleeditie.nrc.nl/digitaleeditie/{self.nrc_version}/{d.year}/{month_minus:02d}/{d.year}{d.month:02d}{d.day:02d}___/section{secnr}.html"
 
     def _login(self, username, password):
+        # We need a 'service' param, this'll have the page generate a cookie that we need to access the data
+        d = self.options.get('date')
+        month_minus = d.month - 1
+        self.index_url = self.index_url.format(**locals())
 
         page = self.getdoc(self.login_url)
-
         form = stoolkit.parse_form(page)
         form['username'] = username
         form['password'] = password
-        self.opener.opener.open(self.login_url, urlencode(form))
+        form['service'] = self.index_url
+
+        response = self.opener.opener.open(self.login_url, urlencode(form))
+        response_txt = response.read().decode('utf-8')
+        if "De opgegeven gebruikersnaam en/of wachtwoord zijn onjuist" in response_txt:
+            raise ValueError("Incorrect username/password")
+        elif not ".nrc.nl" in self.opener.cookiejar._cookies:
+            raise RuntimeError("No cookies from login, something went wrong")
+        else:
+            return True
 
     def _get_units(self):
-        d = self.options.get('date')
-        month_minus = d.month - 1
-        index_url = self.index_url.format(**locals())
-        sections = self.getdoc(index_url).cssselect('#Sections a.section-link')
+        index_doc = self.getdoc(self.index_url)
+        sections = index_doc.cssselect('#Sections a.section-link')
         for s in sections:
             #for each linked section from the left panel
-            section_url = urljoin(index_url, s.get('href'))
+            section_url = urljoin(self.index_url, s.get('href'))
             try:
                 section_index = urljoin(section_url, self.getdoc(section_url).cssselect("#Tabs li.text-tab a")[0].get('href'))
             except HTTPError:
