@@ -22,6 +22,7 @@ from __future__ import unicode_literals, print_function, absolute_import
 from urlparse import urljoin
 from urllib import quote_plus
 import json
+from lxml import html
 
 from amcat.scraping.scraper import HTTPScraper,DatedScraper
 from amcat.tools.toolkit import readDate
@@ -61,6 +62,7 @@ class WebNRCScraper(HTTPScraper, DatedScraper):
             }
 
         article = HTMLDocument(**article_dict)
+        article.props.html = html.tostring(doc)
         yield article
         
         for c in self.get_comments(article):

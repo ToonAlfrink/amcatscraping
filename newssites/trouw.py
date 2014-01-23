@@ -26,6 +26,7 @@ from amcat.scraping.scraper import HTTPScraper,DatedScraper
 
 from urllib2 import HTTPError
 import re
+from  lxml import html
 
 INDEX_URL = "http://www.trouw.nl/tr/nl/15/archief/integration/nmc/frameset/archive/archiveDay.dhtml?archiveDay={y:04d}{m:02d}{d:02d}"
 
@@ -77,6 +78,7 @@ class TrouwWebScraper(HTTPScraper, DatedScraper):
                 page.props.author = page.props.author[:98]
 
         page.props.text = page.doc.cssselect("#art_box2 p")
+        page.props.html = html.tostring(page.doc)
         try:
             page.props.section = page.doc.cssselect("#subnav_nieuws li span.nieuws")[0].text_content()
         except IndexError:

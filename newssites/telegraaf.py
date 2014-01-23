@@ -24,7 +24,7 @@ from amcat.scraping.document import Document, HTMLDocument
 from urlparse import urljoin
 from amcat.tools.toolkit import readDate
 import inspect, sys
-from lxml import etree as ET
+from lxml import html
  
 INDEX_URL = "http://www.telegraaf.nl/snelnieuws/"
 
@@ -39,7 +39,7 @@ def scrape_unit(scraper, page):
     page.doc.cssselect("div.broodMediaBox")[0].drop_tree()
     page.props.text = page.doc.cssselect("#artikelKolom")[0]
     page.props.section = page.doc.find_class('breadcrumbs')[0].findall('a')[-1].text
-    
+    page.props.html = html.tostring(page.doc)
     for comment in scrape_comments(scraper, page):
         comment.is_comment = True
         comment.props.parent = page
@@ -57,7 +57,6 @@ def scrape_comments(scraper, page):
     for doc in docs:
         for div in doc.cssselect("#comments div.comment"):
             comment = HTMLDocument()
-            #print(ET.tostring(div, pretty_print=True))
             comment.props.author = div.cssselect("div.username")[0].text_content().strip()
             comment.props.text = div.cssselect("div.wrapper")[0].text_content() # text has no tag anymore (?!), therefore get everything within wrapper, and split from author            
             comment.props.text = comment.props.text.split(comment.props.author)[1].strip()

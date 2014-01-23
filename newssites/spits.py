@@ -1,4 +1,3 @@
-#!/usr/bin/python
 from __future__ import unicode_literals, print_function, absolute_import
 ###########################################################################
 #          (C) Vrije Universiteit, Amsterdam (the Netherlands)            #
@@ -25,7 +24,9 @@ from amcat.scraping.scraper import DatedScraper, HTTPScraper
 from amcat.scraping.document import HTMLDocument
 from amcat.tools import toolkit
 from amcat.scraping.toolkit import todate
+
 from urlparse import urljoin
+from lxml import html
 
 class SpitsnieuwsScraper(DatedScraper, HTTPScraper):
     medium_name = "Spits - website"
@@ -63,12 +64,13 @@ class SpitsnieuwsScraper(DatedScraper, HTTPScraper):
         footer = doc.doc.cssselect('div.article-options')[0].text_content().split('|')
         doc.props.author = footer[0].strip()
         doc.props.date = toolkit.readDate(" ".join(footer[1:3]))
+        doc.props.html = html.tostring(doc.doc)
         for c in self.comments(doc):
             c.props.parent = doc
             c.is_comment = True
             yield c
 
-
+        
         yield doc
 
     def comments(self, doc):

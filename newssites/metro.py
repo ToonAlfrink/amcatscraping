@@ -72,7 +72,7 @@ class MetroScraper(DatedScraper, HTTPScraper):
     def _scrape_unit(self, doc):
         doc.prepare(self)
         doc.props.text = doc.doc.cssselect("div.article-body")
-        print(doc.props.text)
+        doc.props.html = html.tostring(doc.doc)
         yield doc
 
 if __name__ == '__main__':

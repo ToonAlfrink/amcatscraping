@@ -23,6 +23,8 @@ from amcat.scraping.document import Document, HTMLDocument
 from amcat.scraping.scraper import DBScraper, HTTPScraper
 from amcat.tools.toolkit import readDate
 
+
+from lxml import html
 from urllib import urlencode
 import json
 import re
@@ -100,6 +102,7 @@ class WebFDScraper(HTTPScraper, DBScraper):
             comment.props.section = article.props.section
             yield comment
 
+        article.props.html = html.tostring(article.doc)
         yield article
              
     redirect_url = "http://fd.nl/?service=searchRedirect&id={artid}"

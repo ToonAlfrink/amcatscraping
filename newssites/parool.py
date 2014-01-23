@@ -23,6 +23,7 @@ import re
 import datetime
 from urlparse import urljoin
 from urllib2 import HTTPError
+from lxml import html
 
 from amcat.scraping.scraper import HTTPScraper, DatedScraper
 from amcat.scraping.document import HTMLDocument
@@ -62,6 +63,7 @@ class ParoolScraper(HTTPScraper, DatedScraper):
         page.props.text = page.doc.cssselect("#art_box2 p")
         page.props.date = readDate(page.doc.cssselect("div.time_post")[0].text.split("Bron:")[0])
         page.props.section = re.search("parool/nl/[0-9]+/([\w\d\-]+)/article", page.props.url).group(1).capitalize()
+        page.props.html = html.tostring(page)
         yield page
 
     def getauthor(self, doc):

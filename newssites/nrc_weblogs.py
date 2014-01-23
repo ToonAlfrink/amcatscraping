@@ -24,6 +24,7 @@ from amcat.scraping.document import Document, HTMLDocument
 from urlparse import urljoin
 from amcat.tools.toolkit import readDate
 from urllib2 import HTTPError
+from lxml import html
 
 INDEX_URL = "http://www.nrc.nl/{}/"
 
@@ -90,7 +91,7 @@ class WeblogNRCScraper(HTTPScraper, DatedScraper):
         if page.doc.cssselect("div.auteursinfo"):
             page.props.author = page.doc.cssselect("div.auteursinfo h2")[0].text_content()
         page.props.section = url.split("/")[3]
-            
+        page.props.html = html.tostring(page.doc)
         return page
 
     def get_comments(self,page):

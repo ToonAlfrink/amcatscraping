@@ -22,7 +22,7 @@ from __future__ import unicode_literals, print_function, absolute_import
 import re
 from urlparse import urljoin
 from urllib2 import HTTPError
-from lxml import etree
+from lxml import html
 
 from amcat.tools.toolkit import readDate
 from amcat.scraping.document import Document, HTMLDocument
@@ -51,6 +51,7 @@ class WebADScraper(HTTPScraper, DatedScraper):
     def _scrape_unit(self, article): 
         article.prepare(self)
         article = self.get_article(article)
+        article.props.html = html.tostring(article.doc)
         yield article
         for comment in self.get_comments(article):
             comment.is_comment = True

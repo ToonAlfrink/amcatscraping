@@ -23,6 +23,7 @@ import re
 
 from amcat.scraping.document import Document, HTMLDocument
 
+from lxml import html
 from urlparse import urljoin
 from urllib2 import HTTPError
 from amcat.tools.toolkit import readDate
@@ -81,6 +82,7 @@ class WebVolkskrantScraper(HTTPScraper, DatedScraper):
         match = re.search("/vk/nl/[0-9]+/([a-zA-Z\-]+)/article/", page.props.url)
         if match:
             page.props.section = match.group(1)
+        page.props.html = html.tostring(page.doc)
         yield page
 
 
