@@ -40,9 +40,9 @@ class MilieuDefensieScraper(HTTPScraper, DatedScraper):
             page = self.getdoc(self.page_url.format(**locals()))
             for div in page.cssselect("#Content div.tileItem"):
                 try:
-                    date_str = div.cssselect(".description")[0].text.split("-")[0].split(",")[-1]
+                    date_str = div.cssselect(".description")[0].text.split("–")[0].split("-")[0].split(",")[-1]
                     date = readDate(date_str).date()
-                except (IndexError, ValueError):
+                except (IndexError, ValueError) as e:
                     print("date parsing failed")
                     continue
                 if date == self.options['date']:
