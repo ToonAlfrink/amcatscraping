@@ -278,7 +278,7 @@ class PCMScraper(HTTPScraper, DBScraper):
             page.props.headline = art['title']
             page.props.text = "\n\n".join([el['text'] for el in art['bodyElements']])
             page.parent = ipage
+            if page.props.text:
+                yield page.create_article()
 
-            yield page.create_article()
 
-        yield ipage
