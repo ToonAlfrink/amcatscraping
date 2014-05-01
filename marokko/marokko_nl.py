@@ -47,7 +47,8 @@ class MarokkoScraper(HTTPScraper,DBScraper):
         self.medium = Medium.get_or_create(self.medium_name)
         print("Getting forums...")
         forums = list(self.__getforums())
-        forums = [(fid,_) for fid,_ in forums if fid not in []]
+        forums = [(fid,_) for fid,_ in forums if fid not in 
+                  [26,22,43,54,19,11,12,9,13,44,51,36]]
         for _, doc in forums:
             for pdoc in self.__getpages(doc):
                 for li in pdoc.cssselect("li.threadbit"):
