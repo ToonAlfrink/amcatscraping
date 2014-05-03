@@ -85,7 +85,7 @@ class FokScraper(HTTPScraper, DatedScraper):
         page.props.headline = page.doc.cssselect("h1.title")[0].text.strip("\n")
         byline = page.doc.cssselect("span.postedbyline")[0].text_content()
         page.props.author = byline[byline.find("Geschreven door")+16:byline.find(" op ")]
-        page.props.date = readDate(page.doc.cssselect("span.postedbyline")[0].text_content().split(" op ")[1])
+        page.props.date = readDate(page.doc.cssselect("span.postedbyline")[0].text_content().split("@")[0][-11:])
         for comment in self.get_comments(page):
             comment.is_comment = True
             yield comment
