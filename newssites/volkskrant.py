@@ -54,7 +54,6 @@ class WebVolkskrantScraper(HTTPScraper, DatedScraper):
             unit.cssselect("span")[0].drop_tree()
             title = unit.cssselect("a")[0].text_content().strip("\"")
             yield HTMLDocument(url=url,headline=title)
- 
         
     def _scrape_unit(self, page): 
         page.prepare(self)
@@ -77,12 +76,13 @@ class WebVolkskrantScraper(HTTPScraper, DatedScraper):
                 page.props.author = "None"
         if hasattr(page.props,"author"):
             if page.props.author:
-                page.props.author = page.props.author[:98]
+                page.props.author = page.props.author[:99]
         page.props.text = page.doc.cssselect("#art_box2")[0]
         match = re.search("/vk/nl/[0-9]+/([a-zA-Z\-]+)/article/", page.props.url)
         if match:
             page.props.section = match.group(1)
         page.props.html = html.tostring(page.doc)
+        page.props.date = self.options['date']
         yield page
 
 
