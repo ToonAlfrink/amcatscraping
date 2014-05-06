@@ -63,7 +63,7 @@ class ParoolScraper(HTTPScraper, DatedScraper):
         page.props.text = page.doc.cssselect("#art_box2 p")
         page.props.date = readDate(page.doc.cssselect("div.time_post")[0].text.split("Bron:")[0])
         page.props.section = re.search("parool/nl/[0-9]+/([\w\d\-]+)/article", page.props.url).group(1).capitalize()
-        page.props.html = html.tostring(page)
+        page.props.html = html.tostring(page.doc)
         yield page
 
     def getauthor(self, doc):
