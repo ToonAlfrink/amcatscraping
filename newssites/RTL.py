@@ -74,7 +74,7 @@ class RTLScraper(HTTPScraper, DatedScraper):
         for tag in doc.cssselect("#main article.news"):
             if 'poll' in tag.get('class'):
                 continue
-            _date = datetime.fromtimestamp(int(tag.get('created')))
+            _date = datetime.fromtimestamp(int(tag.get('data-created')))
             article = HTMLDocument(date = _date)
             if tag.cssselect("div.tweet"):
                 article.props.type = "tweet"
@@ -93,7 +93,7 @@ class RTLScraper(HTTPScraper, DatedScraper):
                 self.stories.add(urljoin(url, tag.cssselect("h4 a")[0].get('href')))
                 continue
             else:
-                h = tag.cssselect("div.body h3")[0]
+                h = tag.cssselect("div.body h1")[0]
                 article.props.type = "article"
                 article.props.headline = h.text_content().strip()
                 if h.cssselect("a"):
@@ -107,7 +107,6 @@ class RTLScraper(HTTPScraper, DatedScraper):
             article.prepare(self)
             [div.drop_tree() for div in article.doc.cssselect("div.rtldart")]
             article.props.text = article.doc.cssselect("article.news div.body div.paragraph")
-        print(article)
         yield article
 
 if __name__ == '__main__':
