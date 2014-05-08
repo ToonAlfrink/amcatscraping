@@ -56,17 +56,17 @@ class WebADScraper(HTTPScraper, DatedScraper):
         for comment in self.get_comments(article):
             comment.is_comment = True
             comment.parent = article
-            comment.props.url = parent.props.url
-            if hasattr(parent.props, 'section'):
-                comment.props.section = parent.props.section
+            comment.props.url = comment.parent.props.url
+            if hasattr(comment.parent.props, 'section'):
+                comment.props.section = comment.parent.props.section
             yield comment
 
     def get_article(self, article):
         author_date = article.doc.cssselect('span.author')[0].text_content().strip()
-        pattern = re.compile("^(Door: ([a-zA-Z0-9 ]+))?(\n\n([0-9]+\-[0-9]+\-[0-9]+))?")
+        pattern = re.compile("^((Bewerkt d|D)oor:( |\n)([a-zA-Z0-9 ]+))?(\n\n([0-9]+\-[0-9]+\-[0-9]+))?")
         match = pattern.match(author_date)
-        article.props.author = match.group(2)
-        article.props.date = readDate(match.group(4))
+        article.props.author = match.group(4)
+        article.props.date = readDate(match.group(5))
         try:
             article.props.source = author_date.split("bron:")[1].strip()
         except IndexError:
