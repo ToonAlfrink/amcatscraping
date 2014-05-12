@@ -61,9 +61,11 @@ class KM4DevScraper(HTTPScraper, DBScraper):
         yield parent
 
     def _scrape_li(self, li):
+        lines = [br.text or br.tail or "" for br in li.cssselect("p.entry-summary, p.entry-summary br")]
+        text = "\n".join([l for l in lines if not l.startswith(">")])
         return {
             'date' : readDate(li.cssselect("time")[0].get('datetime')),
-            'text' : li.cssselect("p.entry-summary")[0].text_content().strip(),
+            'text' : text,
             'author' : li.cssselect("p.owner-name")[0].text_content().strip(),
             'pagenr' : int(li.cssselect("p.message-ordinal")[0].text),
             'children' : [],

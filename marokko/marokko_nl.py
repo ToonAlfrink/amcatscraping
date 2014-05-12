@@ -26,6 +26,10 @@ from hashlib import md5
 from amcat.scraping.scraper import HTTPScraper, DBScraper
 from amcat.models.medium import Medium
 
+UNIT_FILE=open('marokko_units.txt','a')
+
+START_AT=(25,5513)
+
 class MarokkoScraper(HTTPScraper,DBScraper):
     medium_name = "marokko.nl"
     forum_url = "http://forums.marokko.nl/forumdisplay.php?f={}&page={}"
@@ -51,14 +55,16 @@ class MarokkoScraper(HTTPScraper,DBScraper):
                   [26,22,43,54,19,11,12,9,13,44,51,36]]
         for _, doc in forums:
             for pdoc in self.__getpages(doc):
-                for li in pdoc.cssselect("li.threadbit"):
+                for li in pdoc.cssselect("li.threadbit:not(.deleted)"):
                     url = urljoin("http://forums.marokko.nl",li.cssselect("a.title")[0].get('href'))
+                    print(url, file = UNIT_FILE)
                     yield url
         for member_url in self.__get_members():
+            print(member_url, file = UNIT_FILE)
             yield member_url
 
     def __getforums(self):
-        for i in range(100):
+        for i in range(START_AT[0],100):
             url = self.forum_url.format(i,1)
             try:
                 doc = self.getdoc(url)
@@ -69,6 +75,10 @@ class MarokkoScraper(HTTPScraper,DBScraper):
                     yield i,doc
 
     def __getpages(self,doc):
+        if "f={}".format(START_AT[0]) in doc.base_url:
+            first = START_AT[1]
+        else:
+            first = 2
         yield doc
         url = doc.base_url + "&page={}"
         try:
@@ -76,7 +86,7 @@ class MarokkoScraper(HTTPScraper,DBScraper):
         except IndexError:
             return
         else:
-            for x in range(2,n_pages + 1):
+            for x in range(first,n_pages + 1):
                 yield self.getdoc(url.format(x))
 
     def _scrape_unit(self, url):
