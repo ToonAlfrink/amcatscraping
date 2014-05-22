@@ -20,7 +20,7 @@ from __future__ import unicode_literals, print_function, absolute_import
 
 from urllib import urlencode
 from urlparse import urljoin
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from hashlib import md5
 
 from amcat.scraping.scraper import HTTPScraper, DBScraper
@@ -28,7 +28,7 @@ from amcat.models.medium import Medium
 
 UNIT_FILE=open('marokko_units.txt','a')
 
-START_AT=(25,5513)
+START_AT=(39,6402)
 
 class MarokkoScraper(HTTPScraper,DBScraper):
     medium_name = "marokko.nl"
@@ -48,7 +48,7 @@ class MarokkoScraper(HTTPScraper,DBScraper):
             raise ValueError("login fail")
 
     def _get_units(self):
-        self.medium = Medium.get_or_create(self.medium_name)
+        """self.medium = Medium.get_or_create(self.medium_name)
         print("Getting forums...")
         forums = list(self.__getforums())
         forums = [(fid,_) for fid,_ in forums if fid not in 
@@ -61,7 +61,10 @@ class MarokkoScraper(HTTPScraper,DBScraper):
                     yield url
         for member_url in self.__get_members():
             print(member_url, file = UNIT_FILE)
-            yield member_url
+            yield member_url"""
+        #skip_until = ...
+        for url in open('marokko_units.txt').readlines():
+            yield url.strip()
 
     def __getforums(self):
         for i in range(START_AT[0],100):
@@ -93,25 +96,31 @@ class MarokkoScraper(HTTPScraper,DBScraper):
         if 'showthread' in url:
             yield self.__scrape_thread(url)
         elif 'member' in url:
+            import sys
+            sys.exit() #will do these later
             yield self.__scrape_profile(url)
 
 
     def __scrape_thread(self, url):
         doc1 = self.getdoc(url)
         op = self.__get_op(doc1)
-        n_pages = int(doc1.cssselect("span > a.popupctrl")[0].text_content().split()[-1])
-        for i in range(2,n_pages+1):
-            doc = self.getdoc(url + "&page={}".format(i))
-            for li in [l for l in doc.cssselect("li") if l.get('id').startswith("post_")]:
+        try:
+            n_pages = int(doc1.cssselect("span > a.popupctrl")[0].text_content().split()[-1])
+        except IndexError:
+            docs = [doc1]
+        else:
+            docs = [doc1] + [self.getdoc(url + "&page={}".format(i)) for i in range(2,n_pages+1)]
+        for doc in docs:
+            for li in [l for l in doc.cssselect("li") if l.get('id') and l.get('id').startswith("post_")]:
                 article = self.__get_post(li)
                 op['children'].append(article)
         return op
 
     def __get_post(self, li):
-        yield {
+        return {
             'date' : self.__parse_date(li.cssselect("span.date")[0].text_content()),
             'author' : li.cssselect("a.username")[0].text_content().strip(),
-            'text' : li.cssselect("blockquote.postcontent")[0],
+            'text' : li.cssselect("blockquote.postcontent")[0].text_content().strip(),
             'metastring' : {'number' : li.cssselect("a.postcounter")[0].text_content().strip("#")},
             'children' : [],
             'medium' : self.medium,
@@ -120,18 +129,22 @@ class MarokkoScraper(HTTPScraper,DBScraper):
 
     def __get_op(self, doc):
         """Get first post, the parent of all replies"""
-        firstli = doc.csssselect("#posts li")[0]
+        firstli = doc.cssselect("#posts li")[0]
         article = self.__get_post(firstli)
         article['section'] = " > ".join([li.text_content().strip() 
                                          for li in doc.cssselect("#breadcrumb li.navbit")[1:-1]])
         article['headline'] = doc.cssselect("span.threadtitle")[0].text_content().strip()
         article['url'] = doc.base_url
+        return article
         
     def __parse_date(self,string):
         date,time = string.split()
         if date == 'Vandaag':
             today = datetime.today()
             day, month, year = today.day, today.month, today.year
+        elif date == 'Gisteren':
+            yesterday = datetime.today() - timedelta(days = 1)
+            day, month, year = yesterday.day, yesterday.month, yesterday.year
         else:
             day, month, year = map(int,date.split("-"))
         hour,minute = map(int,time.split(":"))
