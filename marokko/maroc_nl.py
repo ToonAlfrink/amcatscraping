@@ -22,17 +22,31 @@ from __future__ import unicode_literals, print_function, absolute_import
 from urlparse import urljoin
 from amcat.scraping.scraper import HTTPScraper
 
+UNIT_FILE = open('maroc_units.txt', 'a')
+START_AT=('wie-schrijft-blijft',2)
+
 class MarocScraper(HTTPScraper):
     medium_name = "marokko.nl"
     index_url = "http://www.maroc.nl/forums/forum.php"
 
     def _get_units(self):
         doc = self.getdoc(self.index_url)
+        skip = True
         for li in doc.cssselect("ol.childforum li.forumbit_post"):
             forum_url = urljoin(doc.base_url,li.cssselect("h2.forumtitle a")[0].get('href'))
+            if START_AT[0] in forum_url:
+                skip = False
+            if skip:
+                continue
             for page in self.__get_pages(forum_url):
                 for li in page.cssselect("#threads li.threadbit"):
-                    yield li.cssselect("h3.threadtitle a")[0].get('href')
+                    try:
+                        unit = li.cssselect("h3.threadtitle a")[0].get('href')
+                    except IndexError as e:
+                        print(e)
+                    else:
+                        print(unit, file=UNIT_FILE)
+                        yield unit
 
     def __get_pages(self, url):
         firsturl = url + "?daysprune=-1"
@@ -40,7 +54,10 @@ class MarocScraper(HTTPScraper):
         yield doc
         n_subjects = int(doc.cssselect("#threadpagestats")[0].text.strip().split()[-1])
         n_pages = n_subjects / 20 + 1
-        for pagenr in range(2,n_pages + 1):
+        startpage = 2
+        if START_AT[0] in url:
+            startpage = START_AT[1]
+        for pagenr in range(startpage,n_pages + 1):
             yield self.getdoc(url + "index{}.html?daysprune=-1".format(pagenr))
 
     def _scrape_unit(self, thread_url):
