@@ -62,8 +62,12 @@ class MarokkoScraper(HTTPScraper,DBScraper):
         for member_url in self.__get_members():
             print(member_url, file = UNIT_FILE)
             yield member_url"""
-        #skip_until = ...
+        skip_until = "t=4809614"
         for url in open('marokko_units.txt').readlines():
+            if skip_until not in url:
+                continue
+            else:
+                skip_until = ''
             yield url.strip()
 
     def __getforums(self):

@@ -67,6 +67,8 @@ class WebADScraper(HTTPScraper, DatedScraper):
         match = pattern.match(author_date)
         article.props.author = match.group(4)
         article.props.date = readDate(match.group(5))
+        if not article.props.date:
+            article.props.date = self.options['date']
         try:
             article.props.source = author_date.split("bron:")[1].strip()
         except IndexError:

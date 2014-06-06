@@ -20,9 +20,13 @@ from __future__ import unicode_literals, print_function, absolute_import
 ###########################################################################
 
 from urlparse import urljoin
-from amcat.scraping.scraper import HTTPScraper
+from datetime import datetime
 
-UNIT_FILE = open('maroc_units.txt', 'a')
+from amcat.scraping.scraper import HTTPScraper
+from amcat.models.medium import Medium
+
+
+UNIT_FILE = open('maroc_units.txt', 'a+')
 START_AT=('wie-schrijft-blijft',2)
 
 class MarocScraper(HTTPScraper):
@@ -30,7 +34,8 @@ class MarocScraper(HTTPScraper):
     index_url = "http://www.maroc.nl/forums/forum.php"
 
     def _get_units(self):
-        doc = self.getdoc(self.index_url)
+        self.medium = Medium.get_or_create(self.medium_name)
+        """        doc = self.getdoc(self.index_url)
         skip = True
         for li in doc.cssselect("ol.childforum li.forumbit_post"):
             forum_url = urljoin(doc.base_url,li.cssselect("h2.forumtitle a")[0].get('href'))
@@ -46,7 +51,10 @@ class MarocScraper(HTTPScraper):
                         print(e)
                     else:
                         print(unit, file=UNIT_FILE)
-                        yield unit
+                        yield unit"""
+        units = set(map(str.strip, UNIT_FILE.readlines()))
+        for unit in units:
+            yield unit
 
     def __get_pages(self, url):
         firsturl = url + "?daysprune=-1"
@@ -75,7 +83,9 @@ class MarocScraper(HTTPScraper):
                 'externalid' : int(li.cssselect("a.postcounter")[0].get('name').split("post")[1]),
                 'text' : li.cssselect("blockquote.postcontent")[0].text_content(),
                 'author' : li.cssselect("a.username strong")[0].text,
-                'children' : []
+                'children' : [],
+                'medium' : self.medium,
+                'project' : self.options['project']
                 }
             yield post
 
@@ -88,7 +98,7 @@ class MarocScraper(HTTPScraper):
         return op
 
     def __get_date(self, string):
-        today = date.today()
+        today = datetime.today()
         if "Gisteren" in string:
             yesterday = today - timedelta(days = 1)
             year, month, day = yesterday.year, yesterday.month, yesterday.day
@@ -98,7 +108,7 @@ class MarocScraper(HTTPScraper):
             day, month, year = map(int, string.split(",")[0].split("-"))
             year += 2000
         hour, minute = map(int, string.split(",")[1].split(":"))
-        return date(year, month, day, hour, minute)
+        return datetime(year, month, day, hour, minute)
 
     def __get_thread_pages(self, url):
         doc = self.getdoc(url)
