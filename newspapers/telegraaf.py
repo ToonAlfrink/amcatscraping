@@ -26,6 +26,8 @@ import json, re
 from amcat.scraping.scraper import HTTPScraper, DBScraper
 from amcat.scraping.toolkit import parse_form
 
+from amcat.models.medium import Medium
+
 class TelegraafScraper(HTTPScraper, DBScraper):
     medium_name = "De Telegraaf"
     week_url = "http://www.telegraaf.nl/telegraaf-i/week"
@@ -43,6 +45,7 @@ class TelegraafScraper(HTTPScraper, DBScraper):
             raise ValueError("wrong user/pass")
 
     def _get_units(self):
+        self.medium = Medium.get_or_create(self.medium_name)
         d = self.options['date']
         data = json.loads(self.open("http://www.telegraaf.nl/telegraaf-i/newspapers").read())
         self.paperdata = [i for i in data if i['date'] == "{}-{:02d}-{:02d}".format(d.year,d.month,d.day)][0]
@@ -54,7 +57,8 @@ class TelegraafScraper(HTTPScraper, DBScraper):
 
     def _scrape_unit(self, article_id):
         url = "http://www.telegraaf.nl/telegraaf-i/article/{}".format(article_id)
-        article = {'url' : url, 'metastring' : {}, 'externalid' : article_id, 'children' : []}
+        article = {'url' : url, 'metastring' : {},'children' : [], 'medium' : self.medium, 'date':self.options['date'],
+                   'project': self.options['project']}
         data = json.loads(self.open(url).read())
         lead, text = "", ""
         for d in data['body']:
@@ -79,7 +83,6 @@ class TelegraafScraper(HTTPScraper, DBScraper):
         article['byline'] = "\n".join(data['byline'])
 
         if not article['section'] == "Advertentie":
-            print(article)
             yield article
 
 if __name__ == '__main__':

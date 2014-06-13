@@ -125,12 +125,17 @@ class TwitterPoliticiScraper(HTTPScraper, DBScraper):
         done=False
         while data['has_more_items'] and done==False:
             doc = html.fromstring(data['items_html'])
-            for div in doc.cssselect("div.tweet"):
+            for div in doc.cssselect("div.ProfileTweet"):
                 tweet = HTMLDocument()
-                tweet.props.author = div.cssselect("strong.fullname")[0].text_content()
-                tweet.props.date = datetime.fromtimestamp(float(div.cssselect("a.tweet-timestamp ._timestamp")[0].get('data-time')))
-                tweet.props.text = div.cssselect("p.js-tweet-text")[0]
-                if 'maxid' in locals().keys() and div.get('data-tweet-id') == maxid:
+                tweet.props.author = div.get('data-retweeter') or div.get('data-name')
+                tweet.props.date = datetime.fromtimestamp(float(div.cssselect("span.js-short-timestamp")[0].get('data-time')))
+                tweet.props.text = div.cssselect("p.ProfileTweet-text")[0]
+                tweet.props.is_retweet = bool(div.get('data-retweeter'))
+                if tweet.props.is_retweet:
+                    tweet.props.original_author = div.get('data-name')
+                tweet.props.externalid = long(div.get('data-tweet-id'))
+                tweet.props.url = url
+                if 'maxid' in locals() and div.get('data-tweet-id') == maxid:
                     #infinite loop
                     done = True; break
                 maxid = div.get('data-tweet-id')

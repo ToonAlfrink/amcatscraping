@@ -39,7 +39,7 @@ class MarocScraper(HTTPScraper):
         skip = True
         for li in doc.cssselect("ol.childforum li.forumbit_post"):
             forum_url = urljoin(doc.base_url,li.cssselect("h2.forumtitle a")[0].get('href'))
-            if START_AT[0] in forum_url:
+            if START_AT0] in forum_url:
                 skip = False
             if skip:
                 continue
@@ -53,8 +53,11 @@ class MarocScraper(HTTPScraper):
                         print(unit, file=UNIT_FILE)
                         yield unit"""
         units = set(map(str.strip, UNIT_FILE.readlines()))
+        skip_until = "nieuws-de-dag/206609"
         for unit in units:
-            yield unit
+            if skip_until in unit:
+                skip_until = ""
+                yield unit
 
     def __get_pages(self, url):
         firsturl = url + "?daysprune=-1"
