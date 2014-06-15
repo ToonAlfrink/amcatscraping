@@ -62,7 +62,7 @@ class MarokkoScraper(HTTPScraper,DBScraper):
         for member_url in self.__get_members():
             print(member_url, file = UNIT_FILE)
             yield member_url"""
-        skip_until = "t=2653466" #kwam vorige keer tot p1201
+        skip_until = "t=2910888" #kwam vorige keer tot p1201
         for url in open('marokko_units.txt').readlines():
             if skip_until not in url:
                 continue

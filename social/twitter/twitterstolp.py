@@ -116,6 +116,7 @@ class TwitterPoliticiScraper(HTTPScraper, DBScraper):
             url = row[7]
             screenname = url.split("/")[-1]
             yield DATA_URL.format(screenname=screenname)
+            
 
         
     def _scrape_unit(self, url):
@@ -133,7 +134,6 @@ class TwitterPoliticiScraper(HTTPScraper, DBScraper):
                 tweet.props.is_retweet = bool(div.get('data-retweeter'))
                 if tweet.props.is_retweet:
                     tweet.props.original_author = div.get('data-name')
-                tweet.props.externalid = long(div.get('data-tweet-id'))
                 tweet.props.url = url
                 if 'maxid' in locals() and div.get('data-tweet-id') == maxid:
                     #infinite loop

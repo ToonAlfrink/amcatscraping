@@ -53,7 +53,7 @@ class MarocScraper(HTTPScraper):
                         print(unit, file=UNIT_FILE)
                         yield unit"""
         units = set(map(str.strip, UNIT_FILE.readlines()))
-        skip_until = "nieuws-de-dag/206609"
+        skip_until = "wie-schrijft-blijft/359215"
         for unit in units:
             if skip_until in unit:
                 skip_until = ""
